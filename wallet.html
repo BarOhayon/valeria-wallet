@@ -79,6 +79,12 @@
             let values = localStorage.getItem('wallet');
             if (values !== "") {
                 wallet = JSON.parse(values);
+            } else {
+                wallet = {
+                    gold: 2,
+                    magic: 1,
+                    attack: 0
+                };
             }
 
             updateChangeString();
