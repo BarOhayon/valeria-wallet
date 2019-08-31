@@ -1,0 +1,61 @@
+#gold .actions input[type="button"] {
+    background: #FEA621;
+}
+
+.gold {
+    color: #FEA621;
+}
+
+#attack .actions input[type="button"] {
+    background: #FD2E1E;
+}
+
+.attack {
+    color: #FD2E1E;
+}
+
+#magic .actions input[type="button"] {
+    background: #02B4E4;
+}
+
+.magic {
+    color: #02B4E4;
+}
+
+.changes,
+.label {
+    font-weight: 700;
+    font-size: 25px;
+}
+
+.actions {
+    justify-content: center
+}
+
+input[type="button"] {
+    border-radius: 7px;
+    padding: 7px;
+    margin-top: 5px;
+}
+
+.row.currency {
+    padding: 15px;
+}
+
+.applyChanges {
+    justify-content: center
+}
+
+.currentValue {
+    width: 150px;
+}
+
+body {
+    background: lightgray;
+}
+
+.apply {
+    background: gray;
+    color: white;
+    font-weight: 500;
+}

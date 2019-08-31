@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="./icon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="./styling.css" />
+    <title>Valeria Wallet</title>
+    <script>
+        let wallet = {
+            gold: 2,
+            magic: 1,
+            attack: 0
+        };
+
+        let changes = {
+            gold: 0,
+            magic: 0,
+            attack: 0
+        }
+
+        function addValue(propName, value) {
+            changes[propName] += value;
+            updateChangeString();
+        }
+
+        function updateChangeString() {
+            Object.keys(wallet).forEach(k => {
+                let selectedChange = window.document.getElementsByClassName(`changes ${k}`);
+                if (selectedChange.length) {
+                    if (changes[k] !== 0) {
+                        selectedChange[0].innerHTML = changes[k] > 0 ? `+${changes[k]}` : `${changes[k]}`;
+                    } else {
+                        selectedChange[0].innerHTML = '';
+                    }
+                }
+            })
+        }
+
+        function setChanges() {
+            Object.keys(wallet).forEach(k => {
+                if ((changes[k] + wallet[k]) >= 0) {
+                    wallet[k] += changes[k];
+                    let selectedRow = window.document.getElementById(k);
+                    if (selectedRow) {
+                        let element = selectedRow.getElementsByClassName('currentValue');
+                        if (element.length) {
+                            element[0].value = wallet[k];
+                        }
+                    }
+                    changes[k] = 0;
+                } else {
+                    alert(`Can't reduce ${k} below zero`);
+                }
+            })
+
+            localStorage.setItem(`wallet`, JSON.stringify(wallet));
+
+            updateChangeString();
+        }
+
+        function startNewGame() {
+            if (confirm('Are you sure you want to start a new game?')) {
+                wallet = {
+                    gold: 2,
+                    magic: 1,
+                    attack: 0
+                };
+                localStorage.setItem(`wallet`, JSON.stringify(wallet));
+                initPage();
+            }
+        }
+
+        function initPage() {
+            let values = localStorage.getItem('wallet');
+            if (values !== "") {
+                wallet = JSON.parse(values);
+            }
+
+            updateChangeString();
+            setChanges();
+        }
+    </script>
+</head>
+
+<body onload="initPage()">
+    <h1 align="center">Valeria Wallet</h1>
+    <div class="wallet container">
+        <div class="d-flex justify-content-around">
+            <div class="p-2">
+                <label class="changes gold"></label>
+            </div>
+            <div class="p-2">
+                <label class="changes magic"></label>
+            </div>
+            <div class="p-2">
+                <label class="changes attack"></label>
+            </div>
+        </div>
+        <br>
+        <div class="row currency" id="gold">
+            <div class="row">
+                <div class="col">
+                    <img src="./gold.png" />
+                </div>
+                <div class="col gold label">
+                    Gold
+                </div>
+                <div class="col">
+                    <input type="text" class="currentValue gold" disabled/>
+                </div>
+            </div>
+            <div class="d-flex justify-content-around actions">
+                <div class="p-3">
+                    <input type="button" onClick="addValue('gold', -1)" value="-1" />
+                    <input type="button" onClick="addValue('gold', 1)" value="+1" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('gold', -5)" value="-5" />
+                    <input type="button" onClick="addValue('gold', 5)" value="+5" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('gold', -10)" value="-10" />
+                    <input type="button" onClick="addValue('gold', 10)" value="+10" />
+                </div>
+            </div>
+        </div>
+        <div class="row currency" id="magic">
+            <div class="row">
+                <div class="col">
+                    <img src="./magic.png" />
+                </div>
+                <div class="col magic label">
+                    Magic
+                </div>
+                <div class="col">
+                    <input type="text" class="currentValue magic" disabled/>
+                </div>
+            </div>
+            <div class="d-flex justify-content-around actions">
+                <div class="p-3">
+                    <input type="button" onClick="addValue('magic', -1)" value="-1" />
+                    <input type="button" onClick="addValue('magic', 1)" value="+1" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('magic', -5)" value="-5" />
+                    <input type="button" onClick="addValue('magic', 5)" value="+5" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('magic', -10)" value="-10" />
+                    <input type="button" onClick="addValue('magic', 10)" value="+10" />
+                </div>
+            </div>
+        </div>
+        <div class="row currency" id="attack">
+            <div class="row">
+                <div class="col">
+                    <img src="./attack.png" />
+                </div>
+                <div class="col attack label">
+                    Attack
+                </div>
+                <div class="col">
+                    <input type="text" class="currentValue attack" disabled/>
+                </div>
+            </div>
+            <div class="d-flex justify-content-around actions">
+                <div class="p-3">
+                    <input type="button" onClick="addValue('attack', -1)" value="-1" />
+                    <input type="button" onClick="addValue('attack', 1)" value="+1" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('attack', -5)" value="-5" />
+                    <input type="button" onClick="addValue('attack', 5)" value="+5" />
+                </div>
+                <div class="p-3">
+                    <input type="button" onClick="addValue('attack', -10)" value="-10" />
+                    <input type="button" onClick="addValue('attack', 10)" value="+10" />
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-around">
+            <div class="p2 align-items-center">
+                <input type="button" class="apply" onClick="setChanges()" value="Apply" />
+            </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <div class="d-flex justify-content-start">
+            <div class="p2 ">
+                <input type="button" class="apply" onClick="startNewGame()" value="Start a new game" />
+            </div>
+        </div>
+    </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>
