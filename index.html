@@ -108,8 +108,8 @@
                             Game Id:
                         </div>
                         <div class="col">
-                            <input type="text" class="gameIdInput" value="${game.gameId}" disabled/>
-                        </div>
+                            <input type="text" id="gameIdInput" value="${game.gameId}" disabled/>
+                        </div>                        
                         <div class="col userName label">
                             Player Name:
                         </div>
@@ -125,6 +125,9 @@
                 actionBtn[0].value = "Start game";
                 actionBtn[0].style.display = '';
             }
+
+            let shareBtn = document.getElementById('shareBtn');
+            shareBtn.style.display = '';
 
             let readyToGoBtn = document.getElementById('readyToGo');
             readyToGoBtn.style.display = '';
@@ -199,7 +202,26 @@
             userName.disabled = true;
         }
 
-        function renderJoinGameForm() {
+        function setClipboard(value) {
+            var tempInput = document.createElement("input");
+            tempInput.style = "position: absolute; left: -1000px; top: -1000px";
+            tempInput.value = value;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+        }
+
+        function shareLink() {
+
+            let gameIdText = document.getElementById("gameIdInput").value;
+
+            let shareUrl = `${location.href}?gameId=${gameIdText}`;
+
+            setClipboard(shareUrl)
+        }
+
+        function renderJoinGameForm(sharedGameId = '') {
             currentGame = null;
 
             let container = document.getElementsByClassName('pageContent');
@@ -211,8 +233,8 @@
                             Game Id:
                         </div>
                         <div class="col">
-                            <input type="text" id="gameIdInput"/>
-                        </div>
+                            <input type="text" id="gameIdInput" value="${sharedGameId}"/>
+                        </div>                        
                         <div class="col userName label">
                             Player Name:
                         </div>
@@ -244,7 +266,12 @@
         }
 
         async function initPage() {
+            var urlParams = new URLSearchParams(location.search);
+            let sharedGameId = urlParams.get(`gameId`) || '';
 
+            if (sharedGameId !== '') {
+                renderJoinGameForm(sharedGameId);
+            }
         }
     </script>
 </head>
@@ -258,9 +285,14 @@
     </div>
     <div class="pageContent">
     </div>
+    <div class="d-flex justify-content-between">
 
-    <div class="d-flex justify-content-start">
-        <input type="button" class="actionBtn apply" onClick="joinGame()" value="" style="display:none" />
+        <div class="d-flex justify-content-start">
+            <input type="button" class="actionBtn apply" onClick="joinGame()" value="" style="display:none" />
+        </div>
+        <div>
+            <input type="button" id="shareBtn" onClick="shareLink()" value="Share" style="display:none" />
+        </div>
     </div>
     <div id="playerTable"></div>
     <div class="d-flex justify-content-start">
