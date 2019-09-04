@@ -10,6 +10,9 @@ const getCurrencyHTML = (propName) => {
         <div class="col">
             <input type="text" class="currentValue ${propName}" disabled/>
         </div>
+        <div class="col">
+            <label class="currentChange ${propName}"></label>
+        </div>
     </div>
     <div class="d-flex justify-content-around actions">
         <div class="p-3">

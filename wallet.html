@@ -9,7 +9,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="./styling.css" />
-    <script src="./currency.js"></script>
+    <script src="./components/wallet/currency.js"></script>
+    <script src="./logic/wallet/dice.js"></script>
     <title>Valeria Wallet</title>
     <!-- The core Firebase JS SDK is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/6.5.0/firebase-app.js"></script>
@@ -31,13 +32,6 @@
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-
-        let wallet = {
-            gold: 2,
-            magic: 1,
-            attack: 0,
-            win: 0
-        };
 
         let changes = {
             gold: 0,
@@ -68,6 +62,15 @@
                         selectedChange[0].innerHTML = '';
                     }
                 }
+
+                let currentChange = window.document.getElementsByClassName(`currentChange ${k}`);
+                if (currentChange.length) {
+                    if (changes[k] !== 0) {
+                        currentChange[0].innerHTML = changes[k] > 0 ? `+${changes[k]}` : `${changes[k]}`;
+                    } else {
+                        currentChange[0].innerHTML = '';
+                    }
+                }
             })
 
             let selectedChange = window.document.getElementsByClassName(`changes total`);
@@ -80,7 +83,7 @@
             }
         }
 
-        async function setChanges(ignoreChanges) {
+        async function updateRows(ignoreChanges) {
             if (!currentGame) {
                 return;
             }
@@ -146,7 +149,7 @@
             <div class="d-flex justify-content-around">
                 
                 <div class="p2 align-items-center">
-                    <input type="button" class="apply" onClick="setChanges(false)" value="Apply" />
+                    <input type="button" class="apply" onClick="updateRows(false)" value="Apply" />
                     </div>
                     <div class="d-flex align-items-center">
                     <div class="p2 align-items-baseline">
@@ -188,7 +191,7 @@
                     setPlayerId();
                     renderPlayersTable();
                     renderDiceRoll();
-                    setChanges(true);
+                    updateRows(true);
                 }
             });
 
@@ -277,25 +280,7 @@
             rightDie.src = `./${currentGame.currentDice.secNumber}.png`;
         }
 
-        function renderDiceSection() {
-            let currentRoll = document.getElementById('currentRollResult');
-            currentRoll.innerHTML =
-                `<div class="d-flex justify-content-around flex-column">
-                    <div class="d-flex justify-content-around">
-                        <input type="button" class="apply" onClick="rollDice()" value="Roll Dice" />
-                    </div>
 
-                <div class="d-flex justify-content-around">
-                    <div>
-                        <img id="leftDie" src='' />
-                    </div>
-                    <div>
-                        <img id="rightDie" src='' />
-                    </div>
-                </div>
-            </div>
-            `
-        }
 
         async function initPage() {
 
@@ -304,9 +289,9 @@
             userName = urlParams.get('userName');
 
             renderScreen();
-            renderDiceSection();
+            renderDiceSection('currentRollResult');
             updateChangeString();
-            setChanges(true);
+            updateRows(true);
 
             await refreshGame(gameId);
         }

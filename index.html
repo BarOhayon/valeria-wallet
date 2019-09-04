@@ -9,7 +9,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="./styling.css" />
-    <script src="./currency.js"></script>
+    <script src="./components/index/joinForm.js"></script>
+    <script src="./components/index/createGame.js"></script>
     <title>Valeria Wallet</title>
 
     <!-- The core Firebase JS SDK is always required and must be listed first -->
@@ -95,29 +96,17 @@
             return game;
         }
 
-        async function renderNewGameForm() {
-            currentGame = null;
-            let game = await createNewGame();
+        async function renderNewGameForm(gameId = '', userName = '') {
+
+            if (gameId === '') {
+                currentGame = null;
+                let game = await createNewGame();
+                gameId = game.gameId;
+            }
 
             let container = document.getElementsByClassName('pageContent');
             if (container.length) {
-                container[0].innerHTML = `             
-                <div class="d-flex justify-content-start">
-                    <div id="createGameForm">
-                        <div class="col gameId label">
-                            Game Id:
-                        </div>
-                        <div class="col">
-                            <input type="text" id="gameIdInput" value="${game.gameId}" disabled/>
-                        </div>                        
-                        <div class="col userName label">
-                            Player Name:
-                        </div>
-                        <div class="col">
-                            <input type="text" id="userNameInput" />
-                        </div>
-                    </div>
-                </div>`
+                container[0].innerHTML = getCreateGameHtml(gameId, userName);
             }
 
             let actionBtn = document.getElementsByClassName('actionBtn');
@@ -182,23 +171,37 @@
             }
 
             if (currentGame.players.filter(p => p.name === userName.value).length) {
-                alert(`The name ${userName.value} is already in use`);
-                return;
+                if (confirm(`The name ${userName.value} is already in use, are you sure you want to continue as ${userName.value}`)) {
+                    let index = 0;
+
+                    for (let p of currentGame.players) {
+                        if (p.name === userName.value) {
+                            break;
+                        }
+                        index++;
+                    }
+
+                    if (index === 0) {
+                        renderNewGameForm(currentGame.gameId, userName.value)
+                    } else {
+                        renderJoinGameForm(currentGame.gameId, userName.value);
+                    }
+                }
+            } else {
+                currentGame.players.push({
+                    name: userName.value,
+                    wallet: {
+                        gold: 2,
+                        magic: 1,
+                        attack: 0,
+                        win: 0
+                    }
+                });
+
+                await updateGame(currentGame);
             }
 
-            currentGame.players.push({
-                name: userName.value,
-                wallet: {
-                    gold: 2,
-                    magic: 1,
-                    attack: 0,
-                    win: 0
-                }
-            });
-
-            await updateGame(currentGame);
             renderPlayersTable();
-
             userName.disabled = true;
         }
 
@@ -221,28 +224,12 @@
             setClipboard(shareUrl)
         }
 
-        function renderJoinGameForm(sharedGameId = '') {
+        function renderJoinGameForm(sharedGameId = '', userName = '') {
             currentGame = null;
 
             let container = document.getElementsByClassName('pageContent');
             if (container.length) {
-                container[0].innerHTML = `             
-                <div class="d-flex justify-content-start">
-                    <div id="joinGameForm">
-                        <div class="col gameId label">
-                            Game Id:
-                        </div>
-                        <div class="col">
-                            <input type="text" id="gameIdInput" value="${sharedGameId}"/>
-                        </div>                        
-                        <div class="col userName label">
-                            Player Name:
-                        </div>
-                        <div class="col">
-                            <input type="text" id="userNameInput"/>
-                        </div>
-                    </div>
-                </div> `
+                container[0].innerHTML = getJoinFormHTML(sharedGameId, userName);
             }
 
             let actionBtn = document.getElementsByClassName('actionBtn');
