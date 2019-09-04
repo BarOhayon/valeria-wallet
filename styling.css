@@ -22,6 +22,14 @@
     color: #02B4E4;
 }
 
+.win {
+    color: #803d94;
+}
+
+#win .actions input[type="button"] {
+    background: #803d94;
+}
+
 .changes,
 .label {
     font-weight: 700;
@@ -58,4 +66,13 @@ body {
     background: gray;
     color: white;
     font-weight: 500;
+}
+
+#playerTable td {
+    padding-left: 15px;
+    font-weight: 500;
+}
+
+.currentPlayer {
+    font-weight: 700 !important;
 }

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="./icon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="./styling.css" />
+    <script src="./currency.js"></script>
+    <title>Valeria Wallet</title>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/6.5.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#config-web-app -->
+
+    <script>
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDP1U9RPyFPkNI-oOJRFABg-kNzLX_GGb0",
+            authDomain: "valeriawallet-61550.firebaseapp.com",
+            databaseURL: "https://valeriawallet-61550.firebaseio.com",
+            projectId: "valeriawallet-61550",
+            storageBucket: "",
+            messagingSenderId: "465422731114",
+            appId: "1:465422731114:web:9fbab72a7bdc0f27"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        function makeid(length) {
+            var result = '';
+            var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            var charactersLength = characters.length;
+            for (var i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+        }
+
+        async function getNewGame() {
+            let gameId = makeid(4);
+
+            let gameExists = await firebase.database().ref('/games/' + gameId).once('value');
+
+            while (gameExists.val()) {
+                gameId = makeid(4);
+                gameExists = await firebase.database().ref('/games/' + gameId).once('value');
+            }
+
+            return {
+                gameId,
+                players: [],
+                gameStarted: false
+            }
+        }
+
+        function renderPlayersTable(game) {
+            let container = document.getElementById('playerTable');
+            container.innerHTML = '';
+
+            if (!currentGame) {
+                return;
+            }
+
+            let playersString = currentGame.players.map(p => {
+                return `<tr><td>${p.name}</td> </tr>`
+            }).join("");
+
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <th>Name</th>
+                    </thead>
+                    <tbody> 
+                        ${playersString}
+                    </tbody>            
+                </table>
+            `;
+        }
+
+        let currentGame;
+
+        async function createNewGame() {
+            let game = await getNewGame();
+
+            currentGame = game;
+            renderPlayersTable();
+
+            return game;
+        }
+
+        async function renderNewGameForm() {
+            currentGame = null;
+            let game = await createNewGame();
+
+            let container = document.getElementsByClassName('pageContent');
+            if (container.length) {
+                container[0].innerHTML = `             
+                <div class="d-flex justify-content-start">
+                    <div id="createGameForm">
+                        <div class="col gameId label">
+                            Game Id:
+                        </div>
+                        <div class="col">
+                            <input type="text" class="gameIdInput" value="${game.gameId}" disabled/>
+                        </div>
+                        <div class="col userName label">
+                            Player Name:
+                        </div>
+                        <div class="col">
+                            <input type="text" id="userNameInput" />
+                        </div>
+                    </div>
+                </div>`
+            }
+
+            let actionBtn = document.getElementsByClassName('actionBtn');
+            if (actionBtn.length) {
+                actionBtn[0].value = "Start game";
+                actionBtn[0].style.display = '';
+            }
+
+            let readyToGoBtn = document.getElementById('readyToGo');
+            readyToGoBtn.style.display = '';
+        }
+
+        async function refreshGame() {
+            let gameId;
+
+            if (!currentGame) {
+                gameId = document.getElementById('gameIdInput').value.toUpperCase();
+            } else {
+                gameId = currentGame.gameId;
+            }
+
+            let game = firebase.database().ref('/games/' + gameId);
+
+            game.on('value', function(snapshot) {
+
+                let newVal = snapshot.val();
+                if (newVal) {
+                    currentGame = newVal;
+                    renderPlayersTable();
+
+                    if (currentGame.gameStarted) {
+                        let userName = document.getElementById('userNameInput');
+
+                        window.location.href = `./wallet.html?gameId=${currentGame.gameId}&userName=${userName.value}`;
+                    }
+                }
+            });
+
+            let curr = await game.once('value');
+            let val = curr.val();
+            if (val) {
+                currentGame = val;
+                renderPlayersTable();
+            }
+        }
+
+        async function joinGame() {
+            await refreshGame();
+
+            let userName = document.getElementById('userNameInput');
+            if (!userName.value) {
+                alert('You must enter a name');
+                return;
+            }
+
+            if (currentGame.players.length >= 5) {
+                alert('Game is full');
+                return;
+            }
+
+            if (currentGame.players.filter(p => p.name === userName.value).length) {
+                alert(`The name ${userName.value} is already in use`);
+                return;
+            }
+
+            currentGame.players.push({
+                name: userName.value,
+                wallet: {
+                    gold: 2,
+                    magic: 1,
+                    attack: 0,
+                    win: 0
+                }
+            });
+
+            await updateGame(currentGame);
+            renderPlayersTable();
+
+            userName.disabled = true;
+        }
+
+        function renderJoinGameForm() {
+            currentGame = null;
+
+            let container = document.getElementsByClassName('pageContent');
+            if (container.length) {
+                container[0].innerHTML = `             
+                <div class="d-flex justify-content-start">
+                    <div id="joinGameForm">
+                        <div class="col gameId label">
+                            Game Id:
+                        </div>
+                        <div class="col">
+                            <input type="text" id="gameIdInput"/>
+                        </div>
+                        <div class="col userName label">
+                            Player Name:
+                        </div>
+                        <div class="col">
+                            <input type="text" id="userNameInput"/>
+                        </div>
+                    </div>
+                </div> `
+            }
+
+            let actionBtn = document.getElementsByClassName('actionBtn');
+            if (actionBtn.length) {
+                actionBtn[0].value = "Join game";
+                actionBtn[0].style.display = '';
+            }
+
+            renderPlayersTable();
+            let readyToGoBtn = document.getElementById('readyToGo');
+            readyToGoBtn.style.display = 'none';
+        }
+
+        async function startGame() {
+            currentGame.gameStarted = true;
+            await updateGame(currentGame);
+        }
+
+        async function updateGame(game) {
+            await firebase.database().ref(`/games/${game.gameId}`).set(game);
+        }
+
+        async function initPage() {
+
+        }
+    </script>
+</head>
+
+<body onload="initPage()">
+    <h1 align="center">Valeria Wallet</h1>
+
+    <div class="p2 ">
+        <input type="button" class="apply" onClick="renderNewGameForm()" value="Create a new game" />
+        <input type="button" class="apply" onClick="renderJoinGameForm()" value="Join existing game" />
+    </div>
+    <div class="pageContent">
+    </div>
+
+    <div class="d-flex justify-content-start">
+        <input type="button" class="actionBtn apply" onClick="joinGame()" value="" style="display:none" />
+    </div>
+    <div id="playerTable"></div>
+    <div class="d-flex justify-content-start">
+        <input type="button" id="readyToGo" onClick="startGame()" value="Ready to go" style="display:none" />
+    </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

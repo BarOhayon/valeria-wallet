@@ -9,18 +9,41 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="./styling.css" />
+    <script src="./currency.js"></script>
     <title>Valeria Wallet</title>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/6.5.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+      https://firebase.google.com/docs/web/setup#config-web-app -->
+
     <script>
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDP1U9RPyFPkNI-oOJRFABg-kNzLX_GGb0",
+            authDomain: "valeriawallet-61550.firebaseapp.com",
+            databaseURL: "https://valeriawallet-61550.firebaseio.com",
+            projectId: "valeriawallet-61550",
+            storageBucket: "",
+            messagingSenderId: "465422731114",
+            appId: "1:465422731114:web:9fbab72a7bdc0f27"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
         let wallet = {
             gold: 2,
             magic: 1,
-            attack: 0
+            attack: 0,
+            win: 0
         };
 
         let changes = {
             gold: 0,
             magic: 0,
-            attack: 0
+            attack: 0,
+            win: 0
         }
 
         function addValue(propName, value) {
@@ -29,7 +52,7 @@
         }
 
         function updateChangeString() {
-            Object.keys(wallet).forEach(k => {
+            Object.keys(changes).forEach(k => {
                 let selectedChange = window.document.getElementsByClassName(`changes ${k}`);
                 if (selectedChange.length) {
                     if (changes[k] !== 0) {
@@ -41,52 +64,141 @@
             })
         }
 
-        function setChanges() {
-            Object.keys(wallet).forEach(k => {
-                if ((changes[k] + wallet[k]) >= 0) {
-                    wallet[k] += changes[k];
+        async function setChanges() {
+            let isValid = true;
+            let invalidKeys = [];
+
+            Object.keys(changes).forEach(k => {
+                if ((changes[k] + currentGame.players[playerIndex].wallet[k]) < 0) {
+                    isValid = false;
+                    invalidKeys.push(k);
+                }
+            })
+
+            if (isValid) {
+                Object.keys(changes).forEach(k => {
+                    currentGame.players[playerIndex].wallet[k] += changes[k];
                     let selectedRow = window.document.getElementById(k);
                     if (selectedRow) {
                         let element = selectedRow.getElementsByClassName('currentValue');
                         if (element.length) {
-                            element[0].value = wallet[k];
+                            element[0].value = currentGame.players[playerIndex].wallet[k];
                         }
                     }
                     changes[k] = 0;
-                } else {
-                    alert(`Can't reduce ${k} below zero`);
-                }
-            })
+                })
+            } else {
+                alert(`Can't reduce ${invalidKeys.join(' and ')} below zero`);
+            }
 
-            localStorage.setItem(`wallet`, JSON.stringify(wallet));
-
+            await updateGame();
             updateChangeString();
         }
 
-        function startNewGame() {
-            if (confirm('Are you sure you want to start a new game?')) {
-                wallet = {
-                    gold: 2,
-                    magic: 1,
-                    attack: 0
-                };
-                localStorage.setItem(`wallet`, JSON.stringify(wallet));
-                initPage();
+        async function updateGame() {
+            await firebase.database().ref(`/games/${currentGame.gameId}`).set(currentGame);
+        }
+
+        function renderScreen() {
+            let container = document.getElementsByClassName('currencyRows');
+            if (container.length) {
+                container[0].innerHTML = '';
+            }
+
+            let rowsHtml = ['gold', 'magic', 'attack', 'win'].map(propName => getCurrencyHTML(propName));
+            for (let currHTML of rowsHtml) {
+                let container = document.getElementsByClassName('currencyRows');
+                if (container.length) {
+                    container[0].innerHTML += currHTML;
+                }
             }
         }
 
-        function initPage() {
-            let values = localStorage.getItem('wallet');
-            if (values !== "") {
-                wallet = JSON.parse(values);
-            } else {
-                wallet = {
-                    gold: 2,
-                    magic: 1,
-                    attack: 0
-                };
+        let gameId;
+        let currentGame;
+        let playerIndex;
+        let userName;
+
+        async function refreshGame(gameId) {
+            let game = firebase.database().ref('/games/' + gameId);
+
+            game.on('value', function(snapshot) {
+
+                let newVal = snapshot.val();
+                if (newVal) {
+                    currentGame = newVal;
+                    setPlayerId();
+                    renderPlayersTable();
+                }
+            });
+
+            let curr = await game.once('value');
+            let val = curr.val();
+            if (val) {
+                currentGame = val;
+            }
+        }
+
+        function renderPlayersTable() {
+            let container = document.getElementById('playerTable');
+            container.innerHTML = '';
+
+            if (!currentGame) {
+                return;
             }
 
+            let playersString = currentGame.players.map((p, i) => {
+                return `<tr>
+                        <td ${i === playerIndex ? 'class="currentPlayer"': ''}>${p.name}</td>
+                        <td class="gold">${p.wallet.gold}</td>
+                        <td class="magic">${p.wallet.magic}</td>
+                        <td class="attack">${p.wallet.attack}</td>
+                        <td class="win">${p.wallet.win}</td>
+                    </tr>`
+                return `<tr><td>${p.name}</td><td>${p.wallet.gold}</td><td>${p.wallet.magic}</td><td>${p.wallet.attack}</td><td>${p.wallet.win}</td></tr>`
+            }).join("");
+
+            container.innerHTML = `
+            <table width="100%">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th class="gold">Gold</th>
+                        <th class="magic">Magic</th>
+                        <th class="attack">Attack</th>
+                        <th class="win">Victory</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${playersString}
+                </tbody>
+            </table>
+            `;
+        }
+
+        function setPlayerId() {
+
+            if (!playerIndex) {
+                let index = 0;
+                for (let currPlayer of currentGame.players) {
+                    if (currPlayer.name === userName) {
+                        playerIndex = index;
+                        break;
+                    }
+
+                    index++;
+                }
+            }
+        }
+
+        async function initPage() {
+
+            var urlParams = new URLSearchParams(location.search);
+            let gameId = urlParams.get(`gameId`);
+            userName = urlParams.get('userName');
+            await refreshGame(gameId);
+
+            renderScreen();
             updateChangeString();
             setChanges();
         }
@@ -106,87 +218,8 @@
             <div class="p-2">
                 <label class="changes attack"></label>
             </div>
-        </div>
-        <br>
-        <div class="row currency" id="gold">
-            <div class="row">
-                <div class="col">
-                    <img src="./gold.png" />
-                </div>
-                <div class="col gold label">
-                    Gold
-                </div>
-                <div class="col">
-                    <input type="text" class="currentValue gold" disabled/>
-                </div>
-            </div>
-            <div class="d-flex justify-content-around actions">
-                <div class="p-3">
-                    <input type="button" onClick="addValue('gold', -1)" value="-1" />
-                    <input type="button" onClick="addValue('gold', 1)" value="+1" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('gold', -5)" value="-5" />
-                    <input type="button" onClick="addValue('gold', 5)" value="+5" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('gold', -10)" value="-10" />
-                    <input type="button" onClick="addValue('gold', 10)" value="+10" />
-                </div>
-            </div>
-        </div>
-        <div class="row currency" id="magic">
-            <div class="row">
-                <div class="col">
-                    <img src="./magic.png" />
-                </div>
-                <div class="col magic label">
-                    Magic
-                </div>
-                <div class="col">
-                    <input type="text" class="currentValue magic" disabled/>
-                </div>
-            </div>
-            <div class="d-flex justify-content-around actions">
-                <div class="p-3">
-                    <input type="button" onClick="addValue('magic', -1)" value="-1" />
-                    <input type="button" onClick="addValue('magic', 1)" value="+1" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('magic', -5)" value="-5" />
-                    <input type="button" onClick="addValue('magic', 5)" value="+5" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('magic', -10)" value="-10" />
-                    <input type="button" onClick="addValue('magic', 10)" value="+10" />
-                </div>
-            </div>
-        </div>
-        <div class="row currency" id="attack">
-            <div class="row">
-                <div class="col">
-                    <img src="./attack.png" />
-                </div>
-                <div class="col attack label">
-                    Attack
-                </div>
-                <div class="col">
-                    <input type="text" class="currentValue attack" disabled/>
-                </div>
-            </div>
-            <div class="d-flex justify-content-around actions">
-                <div class="p-3">
-                    <input type="button" onClick="addValue('attack', -1)" value="-1" />
-                    <input type="button" onClick="addValue('attack', 1)" value="+1" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('attack', -5)" value="-5" />
-                    <input type="button" onClick="addValue('attack', 5)" value="+5" />
-                </div>
-                <div class="p-3">
-                    <input type="button" onClick="addValue('attack', -10)" value="-10" />
-                    <input type="button" onClick="addValue('attack', 10)" value="+10" />
-                </div>
+            <div class="p-2">
+                <label class="changes win"></label>
             </div>
         </div>
         <div class="d-flex justify-content-around">
@@ -195,13 +228,13 @@
             </div>
         </div>
         <br>
+        <div class="currencyRows">
+        </div>
         <br>
         <br>
         <br>
-        <div class="d-flex justify-content-start">
-            <div class="p2 ">
-                <input type="button" class="apply" onClick="startNewGame()" value="Start a new game" />
-            </div>
+        <div id="playerTable">
+
         </div>
     </div>
     <!-- Optional JavaScript -->
