@@ -52,47 +52,70 @@
         }
 
         function updateChangeString() {
+            let totalChanges = 0;
+            let dukeFactor = document.getElementById('dukeFactorInput').value.trim();
+
             Object.keys(changes).forEach(k => {
                 let selectedChange = window.document.getElementsByClassName(`changes ${k}`);
                 if (selectedChange.length) {
                     if (changes[k] !== 0) {
                         selectedChange[0].innerHTML = changes[k] > 0 ? `+${changes[k]}` : `${changes[k]}`;
+
+                        if (k !== "win") {
+                            totalChanges += changes[k];
+                        }
                     } else {
                         selectedChange[0].innerHTML = '';
                     }
                 }
             })
+
+            let selectedChange = window.document.getElementsByClassName(`changes total`);
+            if (selectedChange.length) {
+                if (totalChanges !== 0) {
+                    selectedChange[0].innerHTML = `(${(totalChanges / dukeFactor).toFixed(1)})`;
+                } else {
+                    selectedChange[0].innerHTML = ''
+                }
+            }
         }
 
-        async function setChanges() {
+        async function setChanges(ignoreChanges) {
+            if (!currentGame) {
+                return;
+            }
             let isValid = true;
             let invalidKeys = [];
 
+            if (!ignoreChanges) {
+                Object.keys(changes).forEach(k => {
+                    if ((changes[k] + currentGame.players[playerIndex].wallet[k]) < 0) {
+                        isValid = false;
+                        invalidKeys.push(k);
+                    }
+                })
+                if (isValid) {
+                    Object.keys(changes).forEach(k => {
+                        currentGame.players[playerIndex].wallet[k] += changes[k];
+                        changes[k] = 0;
+                    })
+                    await updateGame();
+                    updateChangeString();
+                } else {
+                    alert(`Can't reduce ${invalidKeys.join(' and ')} below zero`);
+                }
+            }
+
             Object.keys(changes).forEach(k => {
-                if ((changes[k] + currentGame.players[playerIndex].wallet[k]) < 0) {
-                    isValid = false;
-                    invalidKeys.push(k);
+                let selectedRow = window.document.getElementById(k);
+                if (selectedRow) {
+                    let element = selectedRow.getElementsByClassName('currentValue');
+                    if (element.length) {
+                        element[0].value = currentGame.players[playerIndex].wallet[k];
+                    }
                 }
             })
 
-            if (isValid) {
-                Object.keys(changes).forEach(k => {
-                    currentGame.players[playerIndex].wallet[k] += changes[k];
-                    let selectedRow = window.document.getElementById(k);
-                    if (selectedRow) {
-                        let element = selectedRow.getElementsByClassName('currentValue');
-                        if (element.length) {
-                            element[0].value = currentGame.players[playerIndex].wallet[k];
-                        }
-                    }
-                    changes[k] = 0;
-                })
-            } else {
-                alert(`Can't reduce ${invalidKeys.join(' and ')} below zero`);
-            }
-
-            await updateGame();
-            updateChangeString();
         }
 
         async function updateGame() {
@@ -100,6 +123,41 @@
         }
 
         function renderScreen() {
+            let changesContainer = document.getElementById('changesContainer');
+
+            changesContainer.innerHTML = `
+            <div class="d-flex justify-content-around">
+                <div class="p-2">
+                    <label class="changes gold"></label>
+                </div>
+                <div class="p-2">
+                    <label class="changes magic"></label>
+                </div>
+                <div class="p-2">
+                    <label class="changes attack"></label>
+                </div>
+                <div class="p-2">
+                    <label class="changes win"></label>
+                </div>
+                <div class="p-2">
+                    <label class="changes win total"></label>
+                </div>
+            </div>
+            <div class="d-flex justify-content-around">
+                
+                <div class="p2 align-items-center">
+                    <input type="button" class="apply" onClick="setChanges(false)" value="Apply" />
+                    </div>
+                    <div class="d-flex align-items-center">
+                    <div class="p2 align-items-baseline">
+                     <label class="dukeLabel">Duke factor: </label></div>
+                    <div class="p2 align-items-center">
+                     <input type="number" id="dukeFactorInput" value="3"/>
+                     </div>
+                     </div>
+                </div>
+            </div>
+`
             let container = document.getElementsByClassName('currencyRows');
             if (container.length) {
                 container[0].innerHTML = '';
@@ -129,6 +187,8 @@
                     currentGame = newVal;
                     setPlayerId();
                     renderPlayersTable();
+                    renderDiceRoll();
+                    setChanges(true);
                 }
             });
 
@@ -148,8 +208,8 @@
             }
 
             let playersString = currentGame.players.map((p, i) => {
-                return `<tr>
-                        <td ${i === playerIndex ? 'class="currentPlayer"': ''}>${p.name}</td>
+                return `<tr ${i === playerIndex ? 'class="currentPlayer"': ''}>
+                        <td >${p.name}</td>
                         <td class="gold">${p.wallet.gold}</td>
                         <td class="magic">${p.wallet.magic}</td>
                         <td class="attack">${p.wallet.attack}</td>
@@ -191,50 +251,83 @@
             }
         }
 
+        async function rollDice() {
+            let firstNumber = Math.floor(Math.random() * 6) + 1;
+            let secNumber = Math.floor(Math.random() * 6) + 1;
+
+            currentGame.currentDice = {
+                firstNumber,
+                secNumber
+            }
+
+            renderDiceRoll();
+
+            await updateGame()
+        }
+
+        function renderDiceRoll() {
+            if (!currentGame.currentDice) {
+                return;
+            }
+
+            let leftDie = document.getElementById('leftDie');
+            leftDie.src = `./${currentGame.currentDice.firstNumber}.png`;
+
+            let rightDie = document.getElementById('rightDie');
+            rightDie.src = `./${currentGame.currentDice.secNumber}.png`;
+        }
+
+        function renderDiceSection() {
+            let currentRoll = document.getElementById('currentRollResult');
+            currentRoll.innerHTML =
+                `<div class="d-flex justify-content-around flex-column">
+                    <div class="d-flex justify-content-around">
+                        <input type="button" class="apply" onClick="rollDice()" value="Roll Dice" />
+                    </div>
+
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <img id="leftDie" src='' />
+                    </div>
+                    <div>
+                        <img id="rightDie" src='' />
+                    </div>
+                </div>
+            </div>
+            `
+        }
+
         async function initPage() {
 
             var urlParams = new URLSearchParams(location.search);
             let gameId = urlParams.get(`gameId`);
             userName = urlParams.get('userName');
-            await refreshGame(gameId);
 
             renderScreen();
+            renderDiceSection();
             updateChangeString();
-            setChanges();
+            setChanges(true);
+
+            await refreshGame(gameId);
         }
     </script>
 </head>
 
 <body onload="initPage()">
-    <h1 align="center">Valeria Wallet</h1>
     <div class="wallet container">
-        <div class="d-flex justify-content-around">
-            <div class="p-2">
-                <label class="changes gold"></label>
-            </div>
-            <div class="p-2">
-                <label class="changes magic"></label>
-            </div>
-            <div class="p-2">
-                <label class="changes attack"></label>
-            </div>
-            <div class="p-2">
-                <label class="changes win"></label>
-            </div>
-        </div>
-        <div class="d-flex justify-content-around">
-            <div class="p2 align-items-center">
-                <input type="button" class="apply" onClick="setChanges()" value="Apply" />
-            </div>
+        <div id="changesContainer">
+
         </div>
         <br>
         <div class="currencyRows">
         </div>
         <br>
         <br>
+        <div id="currentRollResult">
+
+        </div>
         <br>
         <div id="playerTable">
-
         </div>
     </div>
     <!-- Optional JavaScript -->

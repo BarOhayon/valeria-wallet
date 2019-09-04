@@ -75,4 +75,14 @@ body {
 
 .currentPlayer {
     font-weight: 700 !important;
+    border: double;
+    margin-top: 4px;
+}
+
+#dukeFactorInput {
+    width: 20px;
+}
+
+.dukeLabel {
+    margin-right: 5px;
 }
