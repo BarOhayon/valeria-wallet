@@ -13,6 +13,7 @@ const getCurrencyHTML = (propName) => {
         <div class="col">
             <label class="currentChange ${propName}"></label>
         </div>
+        ${propName === "win" ? `<div class="col actions"><input type="button"  onClick="calcEndWinningPoint()" value="Sum tokens" /></div>` : ``}
     </div>
     <div class="d-flex justify-content-around actions">
         <div class="p-3">

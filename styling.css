@@ -28,6 +28,7 @@
 
 #win .actions input[type="button"] {
     background: #803d94;
+    color: #ffffff;
 }
 
 .currentChange,
@@ -86,4 +87,9 @@ body {
 
 .dukeLabel {
     margin-right: 5px;
+}
+
+#logTable {
+    text-align: center;
+    font-weight: 700 !important;
 }

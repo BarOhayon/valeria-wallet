@@ -10,26 +10,14 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="./styling.css" />
     <script src="./components/wallet/currency.js"></script>
+    <script src="./components/wallet/logHistory.js"></script>
+    <script src="./config.js"></script>
     <script src="./logic/wallet/dice.js"></script>
     <title>Valeria Wallet</title>
-    <!-- The core Firebase JS SDK is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/6.5.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
-
-    <!-- TODO: Add SDKs for Firebase products that you want to use
-      https://firebase.google.com/docs/web/setup#config-web-app -->
-
     <script>
-        // Your web app's Firebase configuration
-        var firebaseConfig = {
-            apiKey: "AIzaSyDP1U9RPyFPkNI-oOJRFABg-kNzLX_GGb0",
-            authDomain: "valeriawallet-61550.firebaseapp.com",
-            databaseURL: "https://valeriawallet-61550.firebaseio.com",
-            projectId: "valeriawallet-61550",
-            storageBucket: "",
-            messagingSenderId: "465422731114",
-            appId: "1:465422731114:web:9fbab72a7bdc0f27"
-        };
+        
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
@@ -98,11 +86,15 @@
                     }
                 })
                 if (isValid) {
+                    actionLog.push({...changes
+                    });
+                    renderLogHistory();
                     Object.keys(changes).forEach(k => {
                         currentGame.players[playerIndex].wallet[k] += changes[k];
                         changes[k] = 0;
                     })
                     await updateGame();
+                    await updateLog();
                     updateChangeString();
                 } else {
                     alert(`Can't reduce ${invalidKeys.join(' and ')} below zero`);
@@ -123,6 +115,10 @@
 
         async function updateGame() {
             await firebase.database().ref(`/games/${currentGame.gameId}`).set(currentGame);
+        }
+
+        async function updateLog() {
+            await firebase.database().ref(`/log/${currentGame.gameId}/p${playerIndex}`).set(actionLog);
         }
 
         function renderScreen() {
@@ -179,6 +175,7 @@
         let currentGame;
         let playerIndex;
         let userName;
+        let actionLog = [];
 
         async function refreshGame(gameId) {
             let game = firebase.database().ref('/games/' + gameId);
@@ -202,6 +199,34 @@
             }
         }
 
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function refreshPlayerLog(gameId) {
+            while (playerIndex === undefined) {
+                await delay(500);
+            }
+
+            let game = firebase.database().ref(`/log/${currentGame.gameId}/p${playerIndex}`);
+
+            game.on('value', function(snapshot) {
+
+                let newVal = snapshot.val();
+                if (newVal) {
+                    actionLog = newVal;
+                    renderLogHistory();
+                }
+            });
+
+            let curr = await game.once('value');
+            let val = curr.val();
+            if (val) {
+                actionLog = val;
+                renderLogHistory();
+            }
+        }
+
         function renderPlayersTable() {
             let container = document.getElementById('playerTable');
             container.innerHTML = '';
@@ -218,7 +243,6 @@
                         <td class="attack">${p.wallet.attack}</td>
                         <td class="win">${p.wallet.win}</td>
                     </tr>`
-                return `<tr><td>${p.name}</td><td>${p.wallet.gold}</td><td>${p.wallet.magic}</td><td>${p.wallet.attack}</td><td>${p.wallet.win}</td></tr>`
             }).join("");
 
             container.innerHTML = `
@@ -237,6 +261,17 @@
                 </tbody>
             </table>
             `;
+        }
+
+        function renderLogHistory() {
+            let container = document.getElementById('logTable');
+            container.innerHTML = '';
+
+            if (!currentGame) {
+                return;
+            }
+
+            container.innerHTML = getHistoryLogHtml(actionLog);
         }
 
         function setPlayerId() {
@@ -294,6 +329,25 @@
             updateRows(true);
 
             await refreshGame(gameId);
+            await refreshPlayerLog(gameId);
+        }
+
+        function calcEndWinningPoint(){
+            if (confirm('Are you sure you want to finish the game?')){
+                let sum = 0;
+                Object.keys(changes).forEach(k => {
+                    if (k !== "win"){
+                        changes[k] = -currentGame.players[playerIndex].wallet[k];
+                        sum += currentGame.players[playerIndex].wallet[k];
+                    }
+                })
+
+                let dukeFactor = document.getElementById('dukeFactorInput').value.trim();
+                
+                changes["win"] = Math.floor(sum / dukeFactor);
+
+                updateRows(false);
+            }
         }
     </script>
 </head>
@@ -313,6 +367,11 @@
         </div>
         <br>
         <div id="playerTable">
+
+        </div>
+        <br>
+        <br>
+        <div id="logTable">
         </div>
     </div>
     <!-- Optional JavaScript -->
