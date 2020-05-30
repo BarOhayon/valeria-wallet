@@ -9,7 +9,7 @@ const getJoinFormHTML = (sharedRouteId, userName = '') => {
                             <input type="text" id="routeIdInput" value="${sharedRouteId}"/>
                         </div>                        
                         <div class="col userName label">
-                            Climber Name:
+                            Player Name:
                         </div>
                         <div class="col">
                             <input type="text" id="userNameInput" value="${userName}"/>

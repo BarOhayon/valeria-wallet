@@ -1,12 +1,12 @@
-const getCreateGameHtml = (gameId, userName = "") => {
+const getCreateRouteHtml = (routeId, userName = "") => {
     return `
     <div class="d-flex justify-content-start">
-        <div id="createGameForm">
-            <div class="col gameId label">
-                Game Id:
+        <div id="createRouteForm">
+            <div class="col routeId label">
+                Route Id:
             </div>
             <div class="col">
-                <input type="text" id="gameIdInput" value="${gameId}" disabled/>
+                <input type="text" id="routeIdInput" value="${routeId}" disabled/>
             </div>                        
             <div class="col userName label">
                 Player Name:

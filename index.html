@@ -2,15 +2,17 @@
 <html lang="en">
 
 <head>
+
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" href="./icon.png">
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="./styling.css" />
     <script src="./components/index/joinForm.js"></script>
-    <script src="./components/index/createGame.js"></script>
+    <script src="./components/index/createRoute.js"></script>
     <title>Valeria Wallet</title>
 
     <!-- The core Firebase JS SDK is always required and must be listed first -->
@@ -22,17 +24,19 @@
 
     <script>
         // Your web app's Firebase configuration
-        var firebaseConfig = {
-            apiKey: "AIzaSyDP1U9RPyFPkNI-oOJRFABg-kNzLX_GGb0",
-            authDomain: "valeriawallet-61550.firebaseapp.com",
-            databaseURL: "https://valeriawallet-61550.firebaseio.com",
-            projectId: "valeriawallet-61550",
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHiazujOV2I7vOXti9JKdmE4LbjZayv7E",
+            authDomain: "route-counter.firebaseapp.com",
+            databaseURL: "https://route-counter.firebaseio.com",
+            projectId: "route-counter",
             storageBucket: "",
-            messagingSenderId: "465422731114",
-            appId: "1:465422731114:web:9fbab72a7bdc0f27"
+            messagingSenderId: "384718359826",
+            appId: "1:384718359826:web:2bf4a7d94647881c6a37cb",
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+        console.log({firebase});
+        
 
         function makeid(length) {
             var result = '';
@@ -44,74 +48,74 @@
             return result;
         }
 
-        async function getNewGame() {
-            let gameId = makeid(4);
+        async function getNewRoute() {
+            let routeId = makeid(4);
 
-            let gameExists = await firebase.database().ref('/games/' + gameId).once('value');
+            let routeExists = await firebase.database().ref('/routes/' + routeId).once('value');
 
-            while (gameExists.val()) {
-                gameId = makeid(4);
-                gameExists = await firebase.database().ref('/games/' + gameId).once('value');
+            while (routeExists.val()) {
+                routeId = makeid(4);
+                routeExists = await firebase.database().ref('/routes/' + routeId).once('value');
             }
 
             return {
-                gameId,
+                routeId,
                 players: [],
-                gameStarted: false
+                routeStarted: false
             }
         }
 
-        function renderPlayersTable(game) {
-            let container = document.getElementById('playerTable');
-            container.innerHTML = '';
+        // function renderPlayersTable(route) {
+        //     let container = document.getElementById('playerTable');
+        //     container.innerHTML = '';
 
-            if (!currentGame) {
-                return;
-            }
+        //     if (!currentRoute) {
+        //         return;
+        //     }
 
-            let playersString = currentGame.players.map(p => {
-                return `<tr><td>${p.name}</td> </tr>`
-            }).join("");
+        //     let playersString = currentRoute.players.map(p => {
+        //         return `<tr><td>${p.name}</td> </tr>`
+        //     }).join("");
 
-            container.innerHTML = `
-                <table>
-                    <thead>
-                        <th>Name</th>
-                    </thead>
-                    <tbody> 
-                        ${playersString}
-                    </tbody>            
-                </table>
-            `;
+        //     container.innerHTML = `
+        //         <table>
+        //             <thead>
+        //                 <th>Name</th>
+        //             </thead>
+        //             <tbody> 
+        //                 ${playersString}
+        //             </tbody>            
+        //         </table>
+        //     `;
+        // }
+
+        let currentRoute;
+
+        async function createNewRoute() {
+            let route = await getNewRoute();
+
+            currentRoute = route;
+            // renderPlayersTable();
+
+            return route;
         }
 
-        let currentGame;
+        async function renderNewRouteForm(routeId = '', userName = '') {
 
-        async function createNewGame() {
-            let game = await getNewGame();
-
-            currentGame = game;
-            renderPlayersTable();
-
-            return game;
-        }
-
-        async function renderNewGameForm(gameId = '', userName = '') {
-
-            if (gameId === '') {
-                currentGame = null;
-                let game = await createNewGame();
-                gameId = game.gameId;
+            if (routeId === '') {
+                currentRoute = null;
+                let route = await createNewRoute();
+                routeId = route.routeId;
             }
 
             let container = document.getElementsByClassName('pageContent');
             if (container.length) {
-                container[0].innerHTML = getCreateGameHtml(gameId, userName);
+                container[0].innerHTML = getCreateRouteHtml(routeId, userName);
             }
 
             let actionBtn = document.getElementsByClassName('actionBtn');
             if (actionBtn.length) {
-                actionBtn[0].value = "Start game";
+                actionBtn[0].value = "Start route";
                 actionBtn[0].style.display = '';
             }
 
@@ -122,42 +126,42 @@
             readyToGoBtn.style.display = '';
         }
 
-        async function refreshGame() {
-            let gameId;
+        async function refreshRoute() {
+            let routeId;
 
-            if (!currentGame) {
-                gameId = document.getElementById('gameIdInput').value.toUpperCase();
+            if (!currentRoute) {
+                routeId = document.getElementById('routeIdInput').value.toUpperCase();
             } else {
-                gameId = currentGame.gameId;
+                routeId = currentRoute.routeId;
             }
 
-            let game = firebase.database().ref('/games/' + gameId);
+            let route = firebase.database().ref('/routes/' + routeId);
 
-            game.on('value', function(snapshot) {
+            route.on('value', function (snapshot) {
 
                 let newVal = snapshot.val();
                 if (newVal) {
-                    currentGame = newVal;
-                    renderPlayersTable();
+                    currentRoute = newVal;
+                    // renderPlayersTable();
 
-                    if (currentGame.gameStarted) {
+                    if (currentRoute.routeStarted) {
                         let userName = document.getElementById('userNameInput');
 
-                        window.location.href = `./wallet.html?gameId=${currentGame.gameId}&userName=${userName.value}`;
+                        window.location.href = `./wallet.html?routeId=${currentRoute.routeId}&userName=${userName.value}`;
                     }
                 }
             });
 
-            let curr = await game.once('value');
+            let curr = await route.once('value');
             let val = curr.val();
             if (val) {
-                currentGame = val;
-                renderPlayersTable();
+                currentRoute = val;
+                // renderPlayersTable();
             }
         }
 
-        async function joinGame() {
-            await refreshGame();
+        async function joinRoute() {
+            await refreshRoute();
 
             let userName = document.getElementById('userNameInput');
             if (!userName.value) {
@@ -165,16 +169,16 @@
                 return;
             }
 
-            if (currentGame.players.length >= 5) {
-                alert('Game is full');
+            if (currentRoute.players.length >= 5) {
+                alert('Route is full');
                 return;
             }
 
-            if (currentGame.players.filter(p => p.name === userName.value).length) {
+            if (currentRoute.players.filter(p => p.name === userName.value).length) {
                 if (confirm(`The name ${userName.value} is already in use, are you sure you want to continue as ${userName.value}`)) {
                     let index = 0;
 
-                    for (let p of currentGame.players) {
+                    for (let p of currentRoute.players) {
                         if (p.name === userName.value) {
                             break;
                         }
@@ -182,13 +186,13 @@
                     }
 
                     if (index === 0) {
-                        renderNewGameForm(currentGame.gameId, userName.value)
+                        renderNewRouteForm(currentRoute.routeId, userName.value)
                     } else {
-                        renderJoinGameForm(currentGame.gameId, userName.value);
+                        renderJoinRouteForm(currentRoute.routeId, userName.value);
                     }
                 }
             } else {
-                currentGame.players.push({
+                currentRoute.players.push({
                     name: userName.value,
                     wallet: {
                         gold: 2,
@@ -198,10 +202,10 @@
                     }
                 });
 
-                await updateGame(currentGame);
+                await updateRoute(currentRoute);
             }
 
-            renderPlayersTable();
+            // renderPlayersTable();
             userName.disabled = true;
         }
 
@@ -217,65 +221,65 @@
 
         function shareLink() {
 
-            let gameIdText = document.getElementById("gameIdInput").value;
+            let routeIdText = document.getElementById("routeIdInput").value;
 
-            let shareUrl = `${location.href}?gameId=${gameIdText}`;
+            let shareUrl = `${location.href}?routeId=${routeIdText}`;
 
             setClipboard(shareUrl)
         }
 
-        function renderJoinGameForm(sharedGameId = '', userName = '') {
-            currentGame = null;
+        function renderJoinRouteForm(sharedRouteId = '', userName = '') {
+            currentRoute = null;
 
             let container = document.getElementsByClassName('pageContent');
             if (container.length) {
-                container[0].innerHTML = getJoinFormHTML(sharedGameId, userName);
+                container[0].innerHTML = getJoinFormHTML(sharedRouteId, userName);
             }
 
             let actionBtn = document.getElementsByClassName('actionBtn');
             if (actionBtn.length) {
-                actionBtn[0].value = "Join game";
+                actionBtn[0].value = "Join route";
                 actionBtn[0].style.display = '';
             }
 
-            renderPlayersTable();
+            // renderPlayersTable();
             let readyToGoBtn = document.getElementById('readyToGo');
             readyToGoBtn.style.display = 'none';
         }
 
-        async function startGame() {
-            currentGame.gameStarted = true;
-            await updateGame(currentGame);
+        async function startRoute() {
+            currentRoute.routeStarted = true;
+            await updateRoute(currentRoute);
         }
 
-        async function updateGame(game) {
-            await firebase.database().ref(`/games/${game.gameId}`).set(game);
+        async function updateRoute(route) {
+            await firebase.database().ref(`/routes/${route.routeId}`).set(route);
         }
 
         async function initPage() {
             var urlParams = new URLSearchParams(location.search);
-            let sharedGameId = urlParams.get(`gameId`) || '';
+            let sharedRouteId = urlParams.get(`routeId`) || '';
 
-            if (sharedGameId !== '') {
-                renderJoinGameForm(sharedGameId);
+            if (sharedRouteId !== '') {
+                renderJoinRouteForm(sharedRouteId);
             }
         }
     </script>
 </head>
 
 <body onload="initPage()">
-    <h1 align="center">Valeria Wallet</h1>
+    <h1 align="center">Route Tracker</h1> 
 
     <div class="p2 ">
-        <input type="button" class="apply" onClick="renderNewGameForm()" value="Create a new game" />
-        <input type="button" class="apply" onClick="renderJoinGameForm()" value="Join existing game" />
+        <input type="button" class="apply" onClick="renderNewRouteForm()" value="Create a new route" />
+        <input type="button" class="apply" onClick="renderJoinRouteForm()" value="View existing route" />
     </div>
     <div class="pageContent">
     </div>
     <div class="d-flex justify-content-between">
 
         <div class="d-flex justify-content-start">
-            <input type="button" class="actionBtn apply" onClick="joinGame()" value="" style="display:none" />
+            <input type="button" class="actionBtn apply" onClick="joinRoute()" value="" style="display:none" />
         </div>
         <div>
             <input type="button" id="shareBtn" onClick="shareLink()" value="Share" style="display:none" />
@@ -283,13 +287,19 @@
     </div>
     <div id="playerTable"></div>
     <div class="d-flex justify-content-start">
-        <input type="button" id="readyToGo" onClick="startGame()" value="Ready to go" style="display:none" />
+        <input type="button" id="readyToGo" onClick="startRoute()" value="Ready to go" style="display:none" />
     </div>
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

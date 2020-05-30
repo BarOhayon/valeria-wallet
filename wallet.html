@@ -72,7 +72,7 @@
         }
 
         async function updateRows(ignoreChanges) {
-            if (!currentGame) {
+            if (!currentRoute) {
                 return;
             }
             let isValid = true;
@@ -80,7 +80,7 @@
 
             if (!ignoreChanges) {
                 Object.keys(changes).forEach(k => {
-                    if ((changes[k] + currentGame.players[playerIndex].wallet[k]) < 0) {
+                    if ((changes[k] + currentRoute.players[playerIndex].wallet[k]) < 0) {
                         isValid = false;
                         invalidKeys.push(k);
                     }
@@ -90,10 +90,10 @@
                     });
                     renderLogHistory();
                     Object.keys(changes).forEach(k => {
-                        currentGame.players[playerIndex].wallet[k] += changes[k];
+                        currentRoute.players[playerIndex].wallet[k] += changes[k];
                         changes[k] = 0;
                     })
-                    await updateGame();
+                    await updateRoute();
                     await updateLog();
                     updateChangeString();
                 } else {
@@ -106,19 +106,19 @@
                 if (selectedRow) {
                     let element = selectedRow.getElementsByClassName('currentValue');
                     if (element.length) {
-                        element[0].value = currentGame.players[playerIndex].wallet[k];
+                        element[0].value = currentRoute.players[playerIndex].wallet[k];
                     }
                 }
             })
 
         }
 
-        async function updateGame() {
-            await firebase.database().ref(`/games/${currentGame.gameId}`).set(currentGame);
+        async function updateRoute() {
+            await firebase.database().ref(`/routes/${currentRoute.routeId}`).set(currentRoute);
         }
 
         async function updateLog() {
-            await firebase.database().ref(`/log/${currentGame.gameId}/p${playerIndex}`).set(actionLog);
+            await firebase.database().ref(`/log/${currentRoute.routeId}/p${playerIndex}`).set(actionLog);
         }
 
         function renderScreen() {
@@ -171,20 +171,20 @@
             }
         }
 
-        let gameId;
-        let currentGame;
+        let routeId;
+        let currentRoute;
         let playerIndex;
         let userName;
         let actionLog = [];
 
-        async function refreshGame(gameId) {
-            let game = firebase.database().ref('/games/' + gameId);
+        async function refreshRoute(routeId) {
+            let route = firebase.database().ref('/routes/' + routeId);
 
-            game.on('value', function(snapshot) {
+            route.on('value', function(snapshot) {
 
                 let newVal = snapshot.val();
                 if (newVal) {
-                    currentGame = newVal;
+                    currentRoute = newVal;
                     setPlayerId();
                     renderPlayersTable();
                     renderDiceRoll();
@@ -192,10 +192,10 @@
                 }
             });
 
-            let curr = await game.once('value');
+            let curr = await route.once('value');
             let val = curr.val();
             if (val) {
-                currentGame = val;
+                currentRoute = val;
             }
         }
 
@@ -203,14 +203,14 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        async function refreshPlayerLog(gameId) {
+        async function refreshPlayerLog(routeId) {
             while (playerIndex === undefined) {
                 await delay(500);
             }
 
-            let game = firebase.database().ref(`/log/${currentGame.gameId}/p${playerIndex}`);
+            let route = firebase.database().ref(`/log/${currentRoute.routeId}/p${playerIndex}`);
 
-            game.on('value', function(snapshot) {
+            route.on('value', function(snapshot) {
 
                 let newVal = snapshot.val();
                 if (newVal) {
@@ -219,7 +219,7 @@
                 }
             });
 
-            let curr = await game.once('value');
+            let curr = await route.once('value');
             let val = curr.val();
             if (val) {
                 actionLog = val;
@@ -231,11 +231,11 @@
             let container = document.getElementById('playerTable');
             container.innerHTML = '';
 
-            if (!currentGame) {
+            if (!currentRoute) {
                 return;
             }
 
-            let playersString = currentGame.players.map((p, i) => {
+            let playersString = currentRoute.players.map((p, i) => {
                 return `<tr ${i === playerIndex ? 'class="currentPlayer"': ''}>
                         <td >${p.name}</td>
                         <td class="gold">${p.wallet.gold}</td>
@@ -267,7 +267,7 @@
             let container = document.getElementById('logTable');
             container.innerHTML = '';
 
-            if (!currentGame) {
+            if (!currentRoute) {
                 return;
             }
 
@@ -278,7 +278,7 @@
 
             if (!playerIndex) {
                 let index = 0;
-                for (let currPlayer of currentGame.players) {
+                for (let currPlayer of currentRoute.players) {
                     if (currPlayer.name === userName) {
                         playerIndex = index;
                         break;
@@ -293,26 +293,26 @@
             let firstNumber = Math.floor(Math.random() * 6) + 1;
             let secNumber = Math.floor(Math.random() * 6) + 1;
 
-            currentGame.currentDice = {
+            currentRoute.currentDice = {
                 firstNumber,
                 secNumber
             }
 
             renderDiceRoll();
 
-            await updateGame()
+            await updateRoute()
         }
 
         function renderDiceRoll() {
-            if (!currentGame.currentDice) {
+            if (!currentRoute.currentDice) {
                 return;
             }
 
             let leftDie = document.getElementById('leftDie');
-            leftDie.src = `./${currentGame.currentDice.firstNumber}.png`;
+            leftDie.src = `./${currentRoute.currentDice.firstNumber}.png`;
 
             let rightDie = document.getElementById('rightDie');
-            rightDie.src = `./${currentGame.currentDice.secNumber}.png`;
+            rightDie.src = `./${currentRoute.currentDice.secNumber}.png`;
         }
 
 
@@ -320,7 +320,7 @@
         async function initPage() {
 
             var urlParams = new URLSearchParams(location.search);
-            let gameId = urlParams.get(`gameId`);
+            let routeId = urlParams.get(`routeId`);
             userName = urlParams.get('userName');
 
             renderScreen();
@@ -328,17 +328,17 @@
             updateChangeString();
             updateRows(true);
 
-            await refreshGame(gameId);
-            await refreshPlayerLog(gameId);
+            await refreshRoute(routeId);
+            await refreshPlayerLog(routeId);
         }
 
         function calcEndWinningPoint(){
-            if (confirm('Are you sure you want to finish the game?')){
+            if (confirm('Are you sure you want to finish the route?')){
                 let sum = 0;
                 Object.keys(changes).forEach(k => {
                     if (k !== "win"){
-                        changes[k] = -currentGame.players[playerIndex].wallet[k];
-                        sum += currentGame.players[playerIndex].wallet[k];
+                        changes[k] = -currentRoute.players[playerIndex].wallet[k];
+                        sum += currentRoute.players[playerIndex].wallet[k];
                     }
                 })
 
